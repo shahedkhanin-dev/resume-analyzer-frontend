@@ -31,7 +31,7 @@ function App() {
       setResult(res.data);
     } catch (err) {
       console.error(err);
-      setError("Failed to analyze resume. Make sure backend is running.");
+      setError("Failed to analyze resume. Backend may be sleeping.");
     } finally {
       setLoading(false);
     }
@@ -42,7 +42,7 @@ function App() {
       <div className="w-full max-w-xl bg-gray-900 p-8 rounded-xl border border-blue-500/20 shadow-lg shadow-blue-500/10">
 
         {/* Title */}
-        <h1 className="text-3xl mb-6 text-blue-400 text-center font-semibold tracking-wide">
+        <h1 className="text-3xl mb-6 text-blue-400 text-center font-semibold">
           AI Resume Analyzer
         </h1>
 
@@ -51,10 +51,7 @@ function App() {
           type="file"
           onChange={(e) => setFile(e.target.files?.[0] || null)}
           className="mb-4 w-full text-sm file:mr-4 file:py-2 file:px-4
-          file:rounded file:border-0
-          file:text-sm file:font-semibold
-          file:bg-blue-500 file:text-white
-          hover:file:bg-blue-600"
+          file:rounded file:border-0 file:bg-blue-500 file:text-white"
         />
 
         {/* Role Input */}
@@ -63,94 +60,120 @@ function App() {
           placeholder="Enter role (e.g. frontend developer)"
           value={role}
           onChange={(e) => setRole(e.target.value)}
-          className="w-full mb-4 p-3 rounded bg-gray-800 text-white border border-gray-700 focus:outline-none focus:border-blue-500"
+          className="w-full mb-4 p-3 rounded bg-gray-800 text-white border border-gray-700"
         />
 
         {/* Button */}
         <button
           onClick={handleUpload}
           disabled={loading}
-          className="bg-blue-500 w-full py-2 rounded hover:bg-blue-600 transition transform hover:scale-[1.02] disabled:opacity-50"
+          className="bg-blue-500 w-full py-2 rounded hover:bg-blue-600 transition disabled:opacity-50"
         >
           {loading ? "Analyzing Resume..." : "Analyze Resume"}
         </button>
 
-        {/* Error Message */}
+        {/* Error */}
         {error && (
-          <div className="mt-4 text-red-400 text-center">
-            {error}
-          </div>
+          <div className="mt-4 text-red-400 text-center">{error}</div>
         )}
 
-        {/* Empty State */}
+        {/* Empty */}
         {!result && !loading && !error && (
           <p className="text-gray-400 mt-6 text-center">
             Upload a resume and analyze to see results
           </p>
         )}
 
-        {/* Result Section */}
+        {/* Result */}
         {result && (
-          <div className="mt-8 animate-fadeIn">
+          <div className="mt-8">
 
-            {/* Role */}
-            <h2 className="text-lg mb-2 text-blue-300">
-              Role: {result.analysis.role}
-            </h2>
+            {/* ❌ ERROR RESPONSE */}
+            {result.analysis?.error ? (
+              <div className="text-red-400 text-center">
+                <p className="font-semibold">{result.analysis.error}</p>
+                {result.analysis.available_roles && (
+                  <p className="text-sm mt-2 text-gray-400">
+                    Try: {result.analysis.available_roles.join(", ")}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <>
+                {/* Role */}
+                <h2 className="text-lg text-blue-300 mb-2">
+                  Role: {result.analysis?.role}
+                </h2>
 
-            {/* Match Percentage */}
-            <h2 className="text-xl mb-2">
-              Match: {result.analysis.match_percentage}%
-            </h2>
+                {/* Match */}
+                <h2 className="text-xl mb-2">
+                  Match: {result.analysis?.match_percentage ?? 0}%
+                </h2>
 
-            {/* Progress Bar */}
-            <div className="w-full bg-gray-800 h-3 rounded mb-6">
-              <div
-                className="h-3 bg-blue-500 rounded transition-all duration-1000 ease-out"
-                style={{
-                  width: `${result.analysis.match_percentage}%`,
-                }}
-              />
-            </div>
+                {/* Progress */}
+                <div className="w-full bg-gray-800 h-3 rounded mb-6">
+                  <div
+                    className="h-3 bg-blue-500 rounded transition-all duration-1000"
+                    style={{
+                      width: `${result.analysis?.match_percentage ?? 0}%`,
+                    }}
+                  />
+                </div>
 
-            {/* Detected Skills */}
-            <h3 className="mb-2 text-green-400">
-              Detected Skills
-            </h3>
+                {/* Skills */}
+                <h3 className="text-green-400 mb-2">Detected Skills</h3>
+                <div className="flex flex-wrap gap-2 mb-6">
+                  {(result.skills_detected || []).map((skill: string) => (
+                    <span
+                      key={skill}
+                      className="bg-green-500/20 px-3 py-1 rounded-full text-sm"
+                    >
+                      {skill}
+                    </span>
+                  ))}
+                </div>
 
-            <div className="flex flex-wrap gap-2 mb-6">
-              {result.skills_detected.map((skill: string) => (
-                <span
-                  key={skill}
-                  className="bg-green-500/20 text-green-300 px-3 py-1 rounded-full text-sm hover:scale-105 transition"
-                >
-                  {skill.charAt(0).toUpperCase() + skill.slice(1)}
-                </span>
-              ))}
-            </div>
+                {/* Missing */}
+                <h3 className="text-red-400 mb-2">Missing Skills</h3>
+                <div className="flex flex-wrap gap-2 mb-6">
+                  {(result.analysis?.missing_skills || []).map(
+                    (skill: string) => (
+                      <span
+                        key={skill}
+                        className="bg-red-500/20 px-3 py-1 rounded-full text-sm"
+                      >
+                        {skill}
+                      </span>
+                    )
+                  )}
+                </div>
 
-            {/* Missing Skills */}
-            <h3 className="mb-2 text-red-400">
-              Missing Skills
-            </h3>
-
-            <div className="flex flex-wrap gap-2">
-              {result.analysis.missing_skills.map((skill: string) => (
-                <span
-                  key={skill}
-                  className="bg-red-500/20 text-red-300 px-3 py-1 rounded-full text-sm hover:scale-105 transition"
-                >
-                  {skill.charAt(0).toUpperCase() + skill.slice(1)}
-                </span>
-              ))}
-            </div>
-
+                {/* Recommendations */}
+                {(result.analysis?.recommendations || []).length > 0 && (
+                  <>
+                    <h3 className="text-yellow-400 mb-2">Recommendations</h3>
+                    <ul className="space-y-2">
+                      {result.analysis.recommendations.map(
+                        (rec: string, i: number) => (
+                          <li
+                            key={i}
+                            className="bg-yellow-500/10 px-3 py-2 rounded text-sm"
+                          >
+                            {rec}
+                          </li>
+                        )
+                      )}
+                    </ul>
+                  </>
+                )}
+              </>
+            )}
           </div>
         )}
 
         {/* Footer */}
         <p className="text-center text-gray-500 text-sm mt-6">
-          Built by Mohammed Shahed Afrid Khan 
+          Built by Mohammed Shahed Afrid Khan
         </p>
 
       </div>
